@@ -1,19 +1,55 @@
 """:mod:`wirerope.wire` --- Universal method/function wrapper.
 ==========================================================
 """
+import types
 from ._compat import functools
-from ._util import cached_property
 
 
-@functools.singledispatch
-def descriptor_bind(descriptor, obj, type):
+def _f(owner):
+    return owner
+
+
+def _type_binder(obj, type):
+    return type
+
+
+def _obj_binder(obj, type):
     return obj
 
 
-@descriptor_bind.register(staticmethod)
-@descriptor_bind.register(classmethod)
-def descriptor_bind_(descriptor, obj, type):
-    return type
+_descriptor_binders = {}
+
+
+@functools.singledispatch
+def descriptor_bind(descriptor, obj, type_):
+    descriptor_class = type(descriptor)
+    key = (descriptor_class, obj is not None)
+    if key not in _descriptor_binders:
+        d = descriptor_class(_f)
+        method = d.__get__(obj, type_)
+        if isinstance(method, types.FunctionType):
+            descriptor_bind.register(descriptor)
+            binder = _type_binder
+        else:
+            owner = method()
+            if owner is type_:
+                binder = _type_binder
+            elif owner is obj:
+                binder = _obj_binder
+            else:
+                raise TypeError(
+                    "'descriptor_bind' fails to auto-detect binding rule of "
+                    "the given descriptor. Specify the rule by "
+                    "'wirerope.wire.descriptor_bind.register'.")
+        _descriptor_binders[key] = binder
+    else:
+        binder = _descriptor_binders[key]
+    return binder(obj, type_)
+
+
+@descriptor_bind.register(types.FunctionType)
+def descriptor_bind_function(descriptor, obj, type):
+    return obj
 
 
 class Wire(object):

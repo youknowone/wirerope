@@ -1,48 +1,81 @@
-
 from wirerope import Wire, WireRope, RopeCore
+
+
+class hybridmethod(object):
+
+    def __init__(self, func):
+        self.__func__ = func
+
+    def __get__(self, obj, type=None):
+        bound = obj if obj is not None else type
+        return self.__func__.__get__(bound, type)
+
+
+def test_hybridmethod():
+
+    class X(object):
+
+        @hybridmethod
+        def f(self):
+            return self
+
+    x = X()
+
+    assert X.f() is X
+    assert x.f() is x
 
 
 def test_default_wire():
     rope = WireRope(Wire)
 
     @rope
-    def f(v):
+    def function(v):
         return v
 
     class X(object):
 
         @rope
-        def g(self, v):
-            return v
+        def method(self, v):
+            return (self, v)
 
         @rope
         @classmethod
-        def h(cls, v):
-            return v
+        def cmethod(cls, v):
+            return (cls, v)
 
         @rope
         @staticmethod
-        def k(v):
-            return v
+        def smethod(v):
+            return (None, v)
 
-    assert isinstance(f, RopeCore)
-    assert isinstance(X.g, Wire)  # triggered descriptor
-    assert isinstance(X.h, Wire)  # triggered descriptor
+        @rope
+        @hybridmethod
+        def hmethod(self_or_cls, v):
+            return (self_or_cls, v)
+
+    assert isinstance(function, RopeCore)
+    assert isinstance(X.method, Wire)  # triggered descriptor
+    assert isinstance(X.cmethod, Wire)  # triggered descriptor
+    assert isinstance(X.smethod, Wire)  # triggered descriptor
+    assert isinstance(X.hmethod, Wire)  # triggered descriptor
 
     x = X()
 
-    assert not callable(f)
-    assert not callable(x.g)
-    assert not callable(x.h)
-    assert not callable(x.k)
+    assert not callable(function)
+    assert not callable(x.method)
+    assert not callable(x.cmethod)
+    assert not callable(x.smethod)
+    assert not callable(x.hmethod)
 
-    assert f.__func__(1) == 1
-    assert x.g.__func__(2) == 2
-    assert X.g.__func__(x, 7) == 7
-    assert x.h.__func__(3) == 3
-    assert X.h.__func__(4) == 4
-    assert x.k.__func__(5) == 5
-    assert X.k.__func__(6) == 6
+    assert function.__func__(1) == 1
+    assert x.method.__func__(2) == (x, 2)
+    assert X.method.__func__(x, 7) == (x, 7)
+    assert x.cmethod.__func__(3) == (X, 3)
+    assert X.cmethod.__func__(4) == (X, 4)
+    assert x.smethod.__func__(5) == (None, 5)
+    assert X.smethod.__func__(6) == (None, 6)
+    assert x.hmethod.__func__(8) == (x, 8)
+    assert X.hmethod.__func__(9) == (X, 9)
 
 
 def test_callable_wire():
