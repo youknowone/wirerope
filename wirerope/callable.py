@@ -32,6 +32,10 @@ class Callable(object):
     def parameters(self):
         return list(self.signature.parameters.values())
 
+    @property
+    def first_parameter(self):
+        return self.parameters[0] if self.parameters else None
+
     @cached_property
     def is_descriptor(self):
         return type(self.wrapped_object).__get__ is not types.FunctionType.__get__  # noqa
@@ -54,11 +58,10 @@ class Callable(object):
     def is_membermethod(self):
         """Test given argument is a method or not.
 
-        :param ring.callable.Callable c: A callable object.
         :rtype: bool
 
-        :note: The test is not based on python state but based on parameter
-            name `self`. The test result might be wrong.
+        :note: The test is partially based on the first parameter name.
+            The test result might be wrong.
         """
         if six.PY34:
             if self.is_barefunction:
@@ -73,8 +76,10 @@ class Callable(object):
     def is_classmethod(self):
         """Test given argument is a classmethod or not.
 
-        :param ring.callable.Callable c: A callable object.
         :rtype: bool
+
+        :note: The test is partially based on the first parameter name.
+            The test result might be wrong.
         """
         if isinstance(self.wrapped_object, classmethod):
             return True
@@ -86,10 +91,3 @@ class Callable(object):
 
         return self.first_parameter is not None \
             and self.first_parameter.name == 'cls'
-
-    @cached_property
-    def first_parameter(self):
-        parameters = self.parameters
-        if not parameters:
-            return None
-        return parameters[0]

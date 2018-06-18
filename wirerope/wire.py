@@ -1,4 +1,4 @@
-""":mod:`ring.wire` --- Universal method/function wrapper.
+""":mod:`wirerope.wire` --- Universal method/function wrapper.
 ==========================================================
 """
 from ._compat import functools
@@ -23,9 +23,12 @@ class Wire(object):
 
     - For normal functions, each function is directly wrapped by **Wire**.
     - For any methods or descriptors (including classmethod, staticmethod),
-      each one is wrapped by :class:`ring.wire.MethodRopeMixin`
+      each one is wrapped by :class:`wirerope.wire.MethodRopeMixin`
       and it creates **Wire** object for each bound object.
     """
+
+    __slots__ = (
+        '_rope', '_callable', '_binding', '__func__', '_bound_objects')
 
     def __init__(self, rope, binding):
         self._rope = rope
@@ -35,11 +38,8 @@ class Wire(object):
             self.__func__ = self._callable.wrapped_object.__get__(*binding)
         else:
             self.__func__ = self._callable.wrapped_object
-
-    @cached_property
-    def _bound_objects(self):
         if self._binding is None:
-            return ()
+            self._bound_objects = ()
         else:
-            return (descriptor_bind(
+            self._bound_objects = (descriptor_bind(
                 self._callable.wrapped_object, *self._binding),)

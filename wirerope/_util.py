@@ -19,7 +19,7 @@ class cached_property(property):  # pragma: no cover
         self.__name__ = name or func.__name__
         self.__module__ = func.__module__
         self.__doc__ = doc or func.__doc__
-        self.func = func
+        self.__func__ = func
 
     def __set__(self, obj, value):
         obj.__dict__[self.__name__] = value
@@ -29,6 +29,6 @@ class cached_property(property):  # pragma: no cover
             return self
         value = obj.__dict__.get(self.__name__, _missing)
         if value is _missing:
-            value = self.func(obj)
+            value = self.__func__(obj)
             obj.__dict__[self.__name__] = value
         return value

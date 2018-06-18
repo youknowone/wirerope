@@ -1,5 +1,5 @@
-""":mod:`ring.wire` --- Universal method/function wrapper.
-==========================================================
+""":mod:`wirerope.rope` --- Universal method/function wrapper.
+==============================================================
 """
 import six
 from .callable import Callable
@@ -28,17 +28,15 @@ class MethodRopeMixin(object):
         owner = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
-        wrapper_name_parts = ['__wire_', cw.wrapped_callable.__name__]
+        wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
         if owner is type:
-            wrapper_name_parts.extend(('_', type.__name__))
-        wrapper_name = ''.join(wrapper_name_parts)
-        wrapper = getattr(owner, wrapper_name, None)
-        if wrapper is None:
-            boundmethod = co.__get__(obj, type)
+            wire_name_parts.extend(('_', type.__name__))
+        wire_name = ''.join(wire_name_parts)
+        wire = getattr(owner, wire_name, None)
+        if wire is None:
             wire = self.wire_class(self, (obj, type))
-            wrapper = functools.wraps(boundmethod)(wire)
-            setattr(owner, wrapper_name, wrapper)
-        return wrapper
+            setattr(owner, wire_name, wire)
+        return wire
 
 
 class FunctionRopeMixin(object):
@@ -46,9 +44,7 @@ class FunctionRopeMixin(object):
     def __init__(self, *args, **kwargs):
         super(FunctionRopeMixin, self).__init__(*args, **kwargs)
         assert self.callable.is_barefunction
-        boundmethod = self.callable.wrapped_object
-        wire = self.wire_class(self, None)
-        self._wire = functools.wraps(boundmethod)(wire)
+        self._wire = self.wire_class(self, None)
 
     def __getattr__(self, name):
         try:
@@ -86,8 +82,8 @@ class WireRope(object):
         :return: Wrapper object. The return type is up to given callable is
                  function or method.
         """
-        wrapper = Callable(function)
-        if wrapper.is_barefunction:
+        wire = Callable(function)
+        if wire.is_barefunction:
             rope_class = self.callable_function_rope
             wire_class_call = self.wire_class.__call__
             if six.PY3:
@@ -101,5 +97,5 @@ class WireRope(object):
                     rope_class = self.function_rope
         else:
             rope_class = self.method_rope
-        rope = rope_class(wrapper, rope=self)
+        rope = rope_class(wire, rope=self)
         return rope
