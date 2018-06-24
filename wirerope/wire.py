@@ -9,11 +9,11 @@ def _f(owner):
     return owner
 
 
-def _type_binder(obj, type):
+def _type_binder(descriptor, obj, type):
     return type
 
 
-def _obj_binder(obj, type):
+def _obj_binder(descriptor, obj, type):
     return obj
 
 
@@ -28,8 +28,9 @@ def descriptor_bind(descriptor, obj, type_):
         d = descriptor_class(_f)
         method = d.__get__(obj, type_)
         if isinstance(method, types.FunctionType):
-            descriptor_bind.register(descriptor)
+            register = descriptor_bind.register(type(descriptor))
             binder = _type_binder
+            register(binder)
         else:
             owner = method()
             if owner is type_:
@@ -44,7 +45,7 @@ def descriptor_bind(descriptor, obj, type_):
         _descriptor_binders[key] = binder
     else:
         binder = _descriptor_binders[key]
-    return binder(obj, type_)
+    return binder(descriptor, obj, type_)
 
 
 @descriptor_bind.register(types.FunctionType)
