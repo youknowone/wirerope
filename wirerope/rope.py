@@ -36,7 +36,32 @@ class MethodRopeMixin(object):
         if wire is None:
             wire = self.wire_class(self, (obj, type))
             setattr(owner, wire_name, wire)
+        assert callable(wire.__func__)
         return wire
+
+
+class PropertyRopeMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        super(PropertyRopeMixin, self).__init__(*args, **kwargs)
+        assert not self.callable.is_barefunction
+
+    def __get__(self, obj, type=None):
+        cw = self.callable
+        co = cw.wrapped_object
+        owner = descriptor_bind(co, obj, type)
+        if owner is None:  # invalid binding but still wire it
+            owner = obj if obj is not None else type
+        wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
+        if owner is type:
+            wire_name_parts.extend(('_', type.__name__))
+        wire_name = ''.join(wire_name_parts)
+        wire = getattr(owner, wire_name, None)
+        if wire is None:
+            wire = self.wire_class(self, (obj, type))
+            setattr(owner, wire_name, wire)
+
+        return wire._on_property()  # requires property path
 
 
 class FunctionRopeMixin(object):
@@ -70,6 +95,8 @@ class WireRope(object):
         self.wire_class = wire_class
         self.method_rope = type(
             '_MethodRope', (MethodRopeMixin, core_class), {})
+        self.property_rope = type(
+            '_PropertyRope', (PropertyRopeMixin, core_class), {})
         self.function_rope = type(
             '_FunctionRope', (FunctionRopeMixin, core_class), {})
         self.callable_function_rope = type(
@@ -82,8 +109,8 @@ class WireRope(object):
         :return: Wrapper object. The return type is up to given callable is
                  function or method.
         """
-        wire = Callable(function)
-        if wire.is_barefunction:
+        cw = Callable(function)
+        if cw.is_barefunction:
             rope_class = self.callable_function_rope
             wire_class_call = self.wire_class.__call__
             if six.PY3:
@@ -95,7 +122,9 @@ class WireRope(object):
                 if type(wire_class_call).__name__ == 'method-wrapper' or \
                         wire_class_call.im_class == type:
                     rope_class = self.function_rope
+        elif cw.is_property:
+            rope_class = self.property_rope
         else:
             rope_class = self.method_rope
-        rope = rope_class(wire, rope=self)
+        rope = rope_class(cw, rope=self)
         return rope

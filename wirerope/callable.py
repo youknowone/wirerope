@@ -12,13 +12,85 @@ _inspect_iscoroutinefunction = getattr(
     inspect, 'iscoroutinefunction', lambda f: False)
 
 
+def _f(owner):
+    return owner
+
+
+def _none_binder(desctipror, obj, type):
+    return None
+
+
+def _type_binder(descriptor, obj, type):
+    return type
+
+
+def _obj_binder(descriptor, obj, type):
+    return obj
+
+
+_descriptor_binder_cache = {}
+
+
+class Descriptor(object):
+
+    def __init__(self, descriptor):
+        self.descriptor = descriptor
+        self.descriptor_class = type(descriptor)
+
+    def detect_function_attr_name(self):
+        indicator = object()
+        descriptor = self.descriptor_class(indicator)
+        for name in dir(descriptor):
+            attr = getattr(descriptor, name)
+            if attr is indicator:
+                # detected!
+                return name
+        else:
+            raise RuntimeError(
+                "The given function doesn't hold the given function as an "
+                "attribute. Is it a correct descriptor?")
+
+    def detect_property(self, obj, type_):
+        d = self.descriptor_class(_f)
+        method = d.__get__(obj, type_)
+        return not callable(method)
+
+    def detect_binder(self, obj, type_):
+        key = (self.descriptor_class, obj is not None)
+        if key not in _descriptor_binder_cache:
+            d = self.descriptor_class(_f)
+            method = d.__get__(obj, type_)
+            if isinstance(method, types.FunctionType):
+                binder = _type_binder
+            elif not callable(method):
+                binder = _none_binder
+            else:
+                owner = method()
+                if owner is type_:
+                    binder = _type_binder
+                elif owner is obj:
+                    binder = _obj_binder
+                else:
+                    raise TypeError(
+                        "'descriptor_bind' fails to auto-detect binding rule "
+                        "of the given descriptor. Specify the rule by "
+                        "'wirerope.wire.descriptor_bind.register'.")
+            _descriptor_binder_cache[key] = binder
+        else:
+            binder = _descriptor_binder_cache[key]
+        return binder
+
+
 class Callable(object):
     """A wrapper object including more information of callables."""
 
     def __init__(self, f):
         self.wrapped_object = f
-        if not callable(f):
-            f = f.__func__
+        if self.is_descriptor:
+            self.descriptor = Descriptor(f)
+            f = getattr(f, self.descriptor.detect_function_attr_name())
+        else:
+            self.descriptor = None
         self.wrapped_callable = f
         self.is_wrapped_coroutine = getattr(f, '_is_coroutine', None)
         self.is_coroutine = self.is_wrapped_coroutine or \
@@ -38,7 +110,13 @@ class Callable(object):
 
     @cached_property
     def is_descriptor(self):
-        return type(self.wrapped_object).__get__ is not types.FunctionType.__get__  # noqa
+        return type(self.wrapped_object).__get__ \
+            is not types.FunctionType.__get__  # noqa
+
+    @cached_property
+    def is_property(self):
+        return self.is_descriptor \
+            and self.descriptor.detect_property(None, type(None))
 
     @cached_property
     def is_barefunction(self):
