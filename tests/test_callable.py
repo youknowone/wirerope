@@ -10,6 +10,7 @@ def test_callable_attributes():
     assert w.is_descriptor is False
     assert w.is_membermethod is False
     assert w.is_classmethod is False
+    assert w.is_property is False
 
     class A():
 
@@ -20,6 +21,7 @@ def test_callable_attributes():
         assert w.is_descriptor is False
         assert w.is_membermethod is True
         assert w.is_classmethod is False
+        assert w.is_property is False
 
         @classmethod
         def c(cls):
@@ -29,6 +31,7 @@ def test_callable_attributes():
         assert w.is_descriptor is True
         assert w.is_membermethod is False
         assert w.is_classmethod is True
+        assert w.is_property is False
 
         @staticmethod
         def s():
@@ -38,3 +41,14 @@ def test_callable_attributes():
         assert w.is_descriptor is True
         assert w.is_membermethod is False
         assert w.is_classmethod is False
+        assert w.is_property is False
+
+        @property
+        def p(self):
+            pass
+        w = Callable(p)
+        assert w.is_barefunction is False
+        assert w.is_descriptor is True
+        # assert w.is_membermethod is False
+        assert w.is_classmethod is False
+        assert w.is_property is True

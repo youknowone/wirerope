@@ -53,11 +53,17 @@ def test_default_wire():
         def hmethod(self_or_cls, v):
             return (self_or_cls, v)
 
+        @rope
+        @property
+        def property(self):
+            return (self, )
+
     assert isinstance(function, RopeCore)
     assert isinstance(X.method, Wire)  # triggered descriptor
     assert isinstance(X.cmethod, Wire)  # triggered descriptor
     assert isinstance(X.smethod, Wire)  # triggered descriptor
     assert isinstance(X.hmethod, Wire)  # triggered descriptor
+    # assert isinstance(X.property, Wire)  # triggered descriptor
 
     x = X()
 
@@ -66,6 +72,7 @@ def test_default_wire():
     assert not callable(x.cmethod)
     assert not callable(x.smethod)
     assert not callable(x.hmethod)
+    assert not callable(x.property)
 
     assert function.__func__(1) == 1
     assert x.method.__func__(2) == (x, 2)
@@ -76,6 +83,7 @@ def test_default_wire():
     assert X.smethod.__func__(6) == (None, 6)
     assert x.hmethod.__func__(8) == (x, 8)
     assert X.hmethod.__func__(9) == (X, 9)
+    assert x.property == (x, )
 
 
 def test_callable_wire():
@@ -107,18 +115,25 @@ def test_callable_wire():
         def k(v):
             return v
 
+        @rope
+        @property
+        def p(self):
+            return 42
+
     x = X()
 
     assert callable(f)
     assert callable(x.g)
     assert callable(x.h)
     assert callable(x.k)
+    assert not callable(x.p)
 
     assert f(1) == 1
     assert x.g(2) == 2
     assert X.g(x, 3) == 3
     assert x.h(4) == 4
     assert X.k(5) == 5
+    assert x.p == 42
 
 
 def test_wire():

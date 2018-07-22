@@ -2,49 +2,13 @@
 ==========================================================
 """
 import types
+from .callable import Descriptor
 from ._compat import functools
-
-
-def _f(owner):
-    return owner
-
-
-def _type_binder(descriptor, obj, type):
-    return type
-
-
-def _obj_binder(descriptor, obj, type):
-    return obj
-
-
-_descriptor_binders = {}
 
 
 @functools.singledispatch
 def descriptor_bind(descriptor, obj, type_):
-    descriptor_class = type(descriptor)
-    key = (descriptor_class, obj is not None)
-    if key not in _descriptor_binders:
-        d = descriptor_class(_f)
-        method = d.__get__(obj, type_)
-        if isinstance(method, types.FunctionType):
-            register = descriptor_bind.register(type(descriptor))
-            binder = _type_binder
-            register(binder)
-        else:
-            owner = method()
-            if owner is type_:
-                binder = _type_binder
-            elif owner is obj:
-                binder = _obj_binder
-            else:
-                raise TypeError(
-                    "'descriptor_bind' fails to auto-detect binding rule of "
-                    "the given descriptor. Specify the rule by "
-                    "'wirerope.wire.descriptor_bind.register'.")
-        _descriptor_binders[key] = binder
-    else:
-        binder = _descriptor_binders[key]
+    binder = Descriptor(descriptor).detect_binder(obj, type_)
     return binder(descriptor, obj, type_)
 
 
@@ -72,7 +36,11 @@ class Wire(object):
         self._callable = rope.callable
         self._binding = binding
         if binding:
-            self.__func__ = self._callable.wrapped_object.__get__(*binding)
+            if self._callable.is_property:
+                self.__func__ = functools.partial(
+                    self._callable.wrapped_object.__get__, *binding)
+            else:
+                self.__func__ = self._callable.wrapped_object.__get__(*binding)
         else:
             self.__func__ = self._callable.wrapped_object
         if self._binding is None:
@@ -80,3 +48,6 @@ class Wire(object):
         else:
             self._bound_objects = (descriptor_bind(
                 self._callable.wrapped_object, *self._binding),)
+
+    def _on_property(self):
+        return self.__func__()
