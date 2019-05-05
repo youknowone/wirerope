@@ -1,8 +1,8 @@
 Wirerope
 ========
 
-.. image:: https://travis-ci.org/youknowone/wirerope.svg?branch=master
-    :target: https://travis-ci.org/youknowone/wirerope
+.. image:: https://travis-ci.com/youknowone/wirerope.svg?branch=master
+    :target: https://travis-ci.com/youknowone/wirerope
 .. image:: https://codecov.io/gh/youknowone/wirerope/graph/badge.svg
     :target: https://codecov.io/gh/youknowone/wirerope
 
