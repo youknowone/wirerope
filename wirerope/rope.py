@@ -91,7 +91,7 @@ class CallableRopeMixin(object):
 
 class WireRope(object):
 
-    def __init__(self, wire_class, core_class=RopeCore):
+    def __init__(self, wire_class, core_class=RopeCore, rope_args=None):
         self.wire_class = wire_class
         self.method_rope = type(
             '_MethodRope', (MethodRopeMixin, core_class), {})
@@ -102,6 +102,9 @@ class WireRope(object):
         self.callable_function_rope = type(
             '_CallableFunctionRope',
             (CallableRopeMixin, FunctionRopeMixin, core_class), {})
+        for rope in (self, self.method_rope, self.property_rope,
+                     self.function_rope, self.callable_function_rope):
+            rope._args = rope_args
 
     def __call__(self, function):
         """Wrap a function/method definition.
