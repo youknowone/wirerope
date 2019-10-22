@@ -17,15 +17,19 @@ def _f(owner):
 
 
 def _none_binder(desctipror, obj, type):
-    return None
+    return None, None
+
+
+def _name_binder(descriptor, obj, type):
+    return type, None
 
 
 def _type_binder(descriptor, obj, type):
-    return type
+    return type, type
 
 
 def _obj_binder(descriptor, obj, type):
-    return obj
+    return obj, obj
 
 
 _descriptor_binder_cache = {}
@@ -61,7 +65,8 @@ class Descriptor(object):
             d = self.descriptor_class(_f)
             method = d.__get__(obj, type_)
             if isinstance(method, types.FunctionType):
-                binder = _type_binder
+                # not a boundmethod - probably staticmethod
+                binder = _name_binder
             elif not callable(method):
                 binder = _none_binder
             else:

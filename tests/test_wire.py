@@ -67,6 +67,21 @@ def test_default_wire():
 
     x = X()
 
+    assert x.method._owner == x
+    assert x.cmethod._owner == X
+    assert x.smethod._owner == X
+    assert x.hmethod._owner == x
+    assert X.cmethod._owner == X
+    assert X.smethod._owner == X
+    assert X.hmethod._owner == X
+    assert x.method._bound_objects == (x,)
+    assert x.cmethod._bound_objects == (X,)
+    assert x.smethod._bound_objects == ()
+    assert x.hmethod._bound_objects == (x,)
+    assert X.cmethod._bound_objects == (X,)
+    assert X.smethod._bound_objects == ()
+    assert X.hmethod._bound_objects == (X,)
+
     assert not callable(function)
     assert not callable(x.method)
     assert not callable(x.cmethod)
