@@ -14,7 +14,7 @@ def descriptor_bind(descriptor, obj, type_):
 
 @descriptor_bind.register(types.FunctionType)
 def descriptor_bind_function(descriptor, obj, type):
-    return obj
+    return obj, obj
 
 
 class Wire(object):
@@ -29,11 +29,13 @@ class Wire(object):
     """
 
     __slots__ = (
-        '_rope', '_callable', '_binding', '__func__', '_bound_objects')
+        '_rope', '_callable', '_binding', '__func__', '_owner',
+        '_bound_objects')
 
-    def __init__(self, rope, binding):
+    def __init__(self, rope, owner, binding):
         self._rope = rope
         self._callable = rope.callable
+        self._owner = owner
         self._binding = binding
         if binding:
             if self._callable.is_property:
@@ -46,8 +48,13 @@ class Wire(object):
         if self._binding is None:
             self._bound_objects = ()
         else:
-            self._bound_objects = (descriptor_bind(
-                self._callable.wrapped_object, *self._binding),)
+            _, binder = descriptor_bind(
+                self._callable.wrapped_object, *self._binding)
+            if binder is not None:
+                self._bound_objects = (binder, )
+            else:
+                self._bound_objects = ()
+        assert callable(self.__func__), self.__func__
 
     def _on_property(self):
         return self.__func__()

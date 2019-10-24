@@ -25,7 +25,7 @@ class MethodRopeMixin(object):
     def __get__(self, obj, type=None):
         cw = self.callable
         co = cw.wrapped_object
-        owner = descriptor_bind(co, obj, type)
+        owner, _ = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
         wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
@@ -34,7 +34,7 @@ class MethodRopeMixin(object):
         wire_name = ''.join(wire_name_parts)
         wire = getattr(owner, wire_name, None)
         if wire is None:
-            wire = self.wire_class(self, (obj, type))
+            wire = self.wire_class(self, owner, (obj, type))
             setattr(owner, wire_name, wire)
         assert callable(wire.__func__)
         return wire
@@ -49,7 +49,7 @@ class PropertyRopeMixin(object):
     def __get__(self, obj, type=None):
         cw = self.callable
         co = cw.wrapped_object
-        owner = descriptor_bind(co, obj, type)
+        owner, _ = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
         wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
@@ -58,7 +58,7 @@ class PropertyRopeMixin(object):
         wire_name = ''.join(wire_name_parts)
         wire = getattr(owner, wire_name, None)
         if wire is None:
-            wire = self.wire_class(self, (obj, type))
+            wire = self.wire_class(self, owner, (obj, type))
             setattr(owner, wire_name, wire)
 
         return wire._on_property()  # requires property path
@@ -69,7 +69,7 @@ class FunctionRopeMixin(object):
     def __init__(self, *args, **kwargs):
         super(FunctionRopeMixin, self).__init__(*args, **kwargs)
         assert self.callable.is_barefunction
-        self._wire = self.wire_class(self, None)
+        self._wire = self.wire_class(self, None, None)
 
     def __getattr__(self, name):
         try:
