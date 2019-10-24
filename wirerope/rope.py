@@ -59,7 +59,6 @@ class PropertyRopeMixin(object):
         wire = getattr(owner, wire_name, None)
         if wire is None:
             wire = self.wire_class(self, owner, (obj, type))
-            wire._bound_objects = (owner,)
             setattr(owner, wire_name, wire)
 
         return wire._on_property()  # requires property path

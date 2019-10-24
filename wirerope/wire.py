@@ -54,6 +54,7 @@ class Wire(object):
                 self._bound_objects = (binder, )
             else:
                 self._bound_objects = ()
+        assert callable(self.__func__), self.__func__
 
     def _on_property(self):
         return self.__func__()

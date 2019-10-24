@@ -1,5 +1,7 @@
 from wirerope import Wire, WireRope, RopeCore
 
+import pytest
+
 
 class hybridmethod(object):
 
@@ -9,6 +11,25 @@ class hybridmethod(object):
     def __get__(self, obj, type=None):
         bound = obj if obj is not None else type
         return self.__func__.__get__(bound, type)
+
+
+class hybridproperty(object):
+
+    def __init__(self, func):
+        self.__func__ = func
+
+    def __get__(self, obj, type=None):
+        bound = obj if obj is not None else type
+        return self.__func__.__get__(bound, type)()
+
+
+class awfuldescriptor(object):
+
+    def __init__(self, func):
+        self.__func__ = func
+
+    def __get__(self, obj, type=None):
+        return object()
 
 
 def test_hybridmethod():
@@ -23,6 +44,19 @@ def test_hybridmethod():
 
     assert X.f() is X
     assert x.f() is x
+
+
+def test_hybridproperty():
+
+    class X(object):
+
+        @hybridproperty
+        def p(self):
+            return self
+
+    x = X()
+    assert X.p is X
+    assert x.p is x
 
 
 def test_default_wire():
@@ -58,6 +92,11 @@ def test_default_wire():
         def property(self):
             return (self, )
 
+        @rope
+        @hybridproperty
+        def hproperty(self_or_cls):
+            return (self_or_cls,)
+
     assert isinstance(function, RopeCore)
     assert isinstance(X.method, Wire)  # triggered descriptor
     assert isinstance(X.cmethod, Wire)  # triggered descriptor
@@ -88,6 +127,7 @@ def test_default_wire():
     assert not callable(x.smethod)
     assert not callable(x.hmethod)
     assert not callable(x.property)
+    assert not callable(x.hproperty)
 
     assert function.__func__(1) == 1
     assert x.method.__func__(2) == (x, 2)
@@ -99,6 +139,8 @@ def test_default_wire():
     assert x.hmethod.__func__(8) == (x, 8)
     assert X.hmethod.__func__(9) == (X, 9)
     assert x.property == (x, )
+    assert x.hproperty == (x, )
+    assert X.hproperty == (X, )
 
 
 def test_callable_wire():
@@ -186,3 +228,21 @@ def test_wire():
     assert a.f.y() == 10
     assert b.f.y() == 20
     assert not callable(a.f)
+
+
+def test_unwirable():
+    rope = WireRope(Wire)
+
+    @rope
+    def function(v):
+        return v
+
+    class X(object):
+
+        @rope
+        @awfuldescriptor
+        def messed_up(self, v):
+            return (self, v)
+
+    with pytest.raises(TypeError):
+        X.messed_up

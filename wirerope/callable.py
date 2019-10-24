@@ -12,12 +12,15 @@ _inspect_iscoroutinefunction = getattr(
     inspect, 'iscoroutinefunction', lambda f: False)
 
 
+class _Reagent(object):
+    pass
+
+
+_reagent = _Reagent()
+
+
 def _f(owner):
     return owner
-
-
-def _none_binder(desctipror, obj, type):
-    return None, None
 
 
 def _name_binder(descriptor, obj, type):
@@ -56,8 +59,8 @@ class Descriptor(object):
 
     def detect_property(self, obj, type_):
         d = self.descriptor_class(_f)
-        method = d.__get__(obj, type_)
-        return not callable(method)
+        method_or_value = d.__get__(obj, type_)
+        return method_or_value is obj or method_or_value is type_
 
     def detect_binder(self, obj, type_):
         key = (self.descriptor_class, obj is not None)
@@ -67,19 +70,25 @@ class Descriptor(object):
             if isinstance(method, types.FunctionType):
                 # not a boundmethod - probably staticmethod
                 binder = _name_binder
-            elif not callable(method):
-                binder = _none_binder
-            else:
+            elif method is obj:
+                binder = _obj_binder
+            elif method is type_:
+                binder = _type_binder
+            elif callable(method):
                 owner = method()
                 if owner is type_:
                     binder = _type_binder
                 elif owner is obj:
                     binder = _obj_binder
                 else:
-                    raise TypeError(
-                        "'descriptor_bind' fails to auto-detect binding rule "
-                        "of the given descriptor. Specify the rule by "
-                        "'wirerope.wire.descriptor_bind.register'.")
+                    binder = None
+            else:
+                binder = None
+            if binder is None:
+                raise TypeError(
+                    "'descriptor_bind' fails to auto-detect binding rule "
+                    "of the given descriptor. Specify the rule by "
+                    "'wirerope.wire.descriptor_bind.register'.")
             _descriptor_binder_cache[key] = binder
         else:
             binder = _descriptor_binder_cache[key]
@@ -121,7 +130,7 @@ class Callable(object):
     @cached_property
     def is_property(self):
         return self.is_descriptor \
-            and self.descriptor.detect_property(None, type(None))
+            and self.descriptor.detect_property(_reagent, _Reagent)
 
     @cached_property
     def is_barefunction(self):
