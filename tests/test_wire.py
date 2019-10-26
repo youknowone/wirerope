@@ -60,41 +60,51 @@ def test_hybridproperty():
 
 
 def test_default_wire():
-    rope = WireRope(Wire)
+    class TestWire(Wire):
+        pass
+
+    rope = WireRope(TestWire, wraps=True)
 
     @rope
     def function(v):
+        '''function'''
         return v
 
     class X(object):
 
         @rope
         def method(self, v):
+            '''method'''
             return (self, v)
 
         @rope
         @classmethod
         def cmethod(cls, v):
+            '''cmethod'''
             return (cls, v)
 
         @rope
         @staticmethod
         def smethod(v):
+            '''smethod'''
             return (None, v)
 
         @rope
         @hybridmethod
         def hmethod(self_or_cls, v):
+            '''hmethod'''
             return (self_or_cls, v)
 
         @rope
         @property
         def property(self):
+            '''property'''
             return (self, )
 
         @rope
         @hybridproperty
         def hproperty(self_or_cls):
+            '''hproperty'''
             return (self_or_cls,)
 
     assert isinstance(function, RopeCore)
@@ -141,6 +151,17 @@ def test_default_wire():
     assert x.property == (x, )
     assert x.hproperty == (x, )
     assert X.hproperty == (X, )
+
+    assert function.__doc__ == 'function'
+    assert x.method.__doc__ == 'method'
+    assert X.method.__doc__ == 'method'
+    assert x.cmethod.__doc__ == 'cmethod'
+    assert X.cmethod.__doc__ == 'cmethod'
+    assert x.smethod.__doc__ == 'smethod'
+    assert X.smethod.__doc__ == 'smethod'
+    assert x.hmethod.__doc__ == 'hmethod'
+    assert X.hmethod.__doc__ == 'hmethod'
+    assert X.property.__doc__ == 'property'
 
 
 def test_callable_wire():

@@ -38,11 +38,14 @@ class Wire(object):
         self._owner = owner
         self._binding = binding
         if binding:
+            func = self._callable.wrapped_object.__get__
             if self._callable.is_property:
-                self.__func__ = functools.partial(
-                    self._callable.wrapped_object.__get__, *binding)
+                # functools.partial doesn't work with py2 functools.wraps
+                def _property():
+                    return func(*binding)
+                self.__func__ = _property
             else:
-                self.__func__ = self._callable.wrapped_object.__get__(*binding)
+                self.__func__ = func(*binding)
         else:
             self.__func__ = self._callable.wrapped_object
         if self._binding is None:
@@ -55,6 +58,8 @@ class Wire(object):
             else:
                 self._bound_objects = ()
         assert callable(self.__func__), self.__func__
+        if rope._wrapped:
+            functools.wraps(self.__func__)(self)
 
     def _on_property(self):
         return self.__func__()

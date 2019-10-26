@@ -82,6 +82,9 @@ class Descriptor(object):
                     binder = _obj_binder
                 else:
                     binder = None
+            elif method is d:
+                # some non-method descriptor
+                binder = _name_binder
             else:
                 binder = None
             if binder is None:
