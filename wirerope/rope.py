@@ -13,7 +13,10 @@ class RopeCore(object):
         super(RopeCore, self).__init__()
         self.callable = callable
         self.rope = rope
-        self.wire_class = rope.wire_class
+
+    @property
+    def wire_class(self):
+        return self.rope.wire_class
 
 
 class MethodRopeMixin(object):
@@ -91,7 +94,9 @@ class CallableRopeMixin(object):
 
 class WireRope(object):
 
-    def __init__(self, wire_class, core_class=RopeCore, rope_args=None):
+    def __init__(
+            self, wire_class, core_class=RopeCore,
+            wraps=False, rope_args=None):
         self.wire_class = wire_class
         self.method_rope = type(
             '_MethodRope', (MethodRopeMixin, core_class), {})
@@ -104,6 +109,7 @@ class WireRope(object):
             (CallableRopeMixin, FunctionRopeMixin, core_class), {})
         for rope in (self, self.method_rope, self.property_rope,
                      self.function_rope, self.callable_function_rope):
+            rope._wrapped = wraps
             rope._args = rope_args
 
     def __call__(self, function):
@@ -130,4 +136,6 @@ class WireRope(object):
         else:
             rope_class = self.method_rope
         rope = rope_class(cw, rope=self)
+        if rope._wrapped:
+            rope = functools.wraps(cw.wrapped_callable)(rope)
         return rope
