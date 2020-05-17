@@ -1,9 +1,11 @@
-""":mod:`wirerope.wire` --- Universal method/function wrapper.
-==========================================================
+""":mod:`wirerope.wire` --- end-point instant for each bound method
+===================================================================
 """
 import types
 from .callable import Descriptor
 from ._compat import functools
+
+__all__ = 'Wire',
 
 
 @functools.singledispatch
@@ -24,7 +26,7 @@ class Wire(object):
 
     - For normal functions, each function is directly wrapped by **Wire**.
     - For any methods or descriptors (including classmethod, staticmethod),
-      each one is wrapped by :class:`wirerope.wire.MethodRopeMixin`
+      each one is wrapped by :class:`wirerope.rope.MethodRopeMixin`
       and it creates **Wire** object for each bound object.
     """
 

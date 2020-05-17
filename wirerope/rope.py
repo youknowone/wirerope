@@ -1,13 +1,20 @@
-""":mod:`wirerope.rope` --- Universal method/function wrapper.
-==============================================================
+""":mod:`wirerope.rope` --- Wire access dispatcher for descriptor type.
+=======================================================================
 """
 import six
 from .callable import Callable
 from .wire import descriptor_bind
 from ._compat import functools
 
+__all__ = 'WireRope', 'RopeCore'
+
 
 class RopeCore(object):
+    """The base rope object.
+
+    To change rope behavior, create a subclass or compatible class
+    and pass it to `core_class` argument of :class wirerope.rope.WireRope`.
+    """
 
     def __init__(self, callable, rope):
         super(RopeCore, self).__init__()
@@ -93,6 +100,16 @@ class CallableRopeMixin(object):
 
 
 class WireRope(object):
+    """The end-user wrapper for callables.
+
+    Any callable can be wrapped by this class regardless of its concept -
+    free function, method, property or even more weird one.
+    The calling type is decided by each call and redirected to proper RopeMixin.
+
+    The rope will detect method or property owner by needs. It also will return
+    or call their associated `wirerope.wire.Wire` object - which are the user
+    defined behavior.
+    """
 
     def __init__(
             self, wire_class, core_class=RopeCore,
@@ -115,8 +132,8 @@ class WireRope(object):
     def __call__(self, function):
         """Wrap a function/method definition.
 
-        :return: Wrapper object. The return type is up to given callable is
-                 function or method.
+        :return: Rope object. The return type is up to given callable is
+                 function, method or property.
         """
         cw = Callable(function)
         if cw.is_barefunction:
