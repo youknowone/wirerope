@@ -1,11 +1,16 @@
-wirerope
-========
+.. wirerope documentation master file, created by
+   sphinx-quickstart on Mon May 18 02:46:57 2020.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-.. image:: https://travis-ci.com/youknowone/wirerope.svg?branch=master
-    :target: https://travis-ci.com/youknowone/wirerope
-.. image:: https://codecov.io/gh/youknowone/wirerope/graph/badge.svg
-    :target: https://codecov.io/gh/youknowone/wirerope
+wirerope - the way to handle bound methods.
+===========================================
 
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+
+   wirerope
 
 The concepts:
 
@@ -32,10 +37,9 @@ and bound to it regardless of the calling type.
 object for decorated callable instead of simple callable feature.
 
 
-See also
---------
+Indices and tables
+==================
 
-- See [documentation] - though it is not written very well.
-- See `tests/test_wire.py` for simple example.
-- See [methodtools](https://github.com/youknowone/methodtools) for practical
-  example.
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

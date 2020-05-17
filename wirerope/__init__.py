@@ -1,3 +1,6 @@
+""":mod:`wirerope` --- Universal method/function wrapper.
+=========================================================
+"""
 
 from .wire import Wire
 from .rope import WireRope, RopeCore
