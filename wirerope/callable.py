@@ -103,6 +103,7 @@ class Callable(object):
 
     def __init__(self, f):
         self.wrapped_object = f
+        self.is_function_type = type(self) is types.FunctionType  # noqa
         if self.is_descriptor:
             self.descriptor = Descriptor(f)
             f = getattr(f, self.descriptor.detect_function_attr_name())
@@ -126,31 +127,56 @@ class Callable(object):
         return self.parameters[0] if self.parameters else None
 
     @cached_property
+    def is_boundmethod(self):
+        if self.is_function_type:
+            return False
+        try:
+            return self.wrapped_object.__get__(object()) is self.wrapped_object
+        except Exception:
+            return False
+
+    if six.PY2:
+        @property
+        def is_unboundmethod(self):
+            return type(self.wrapped_object) is type(Callable.__init__)  # noqa
+
+    @cached_property
     def is_descriptor(self):
-        return type(self.wrapped_object).__get__ \
+        if self.is_boundmethod:
+            return False
+        is_descriptor = type(self.wrapped_object).__get__ \
             is not types.FunctionType.__get__  # noqa
+        if six.PY2:
+            is_descriptor = is_descriptor and \
+                not (self.is_unboundmethod or self.is_boundmethod)
+        return is_descriptor
 
     @cached_property
     def is_property(self):
         return self.is_descriptor \
             and self.descriptor.detect_property(_reagent, _Reagent)
 
-    @cached_property
-    def is_barefunction(self):
-        cc = self.wrapped_callable
-        if six.PY34:
+    if six.PY34:
+        @cached_property
+        def is_barefunction(self):
+            cc = self.wrapped_callable
             method_name = cc.__qualname__.split('<locals>.')[-1]
             if method_name == cc.__name__:
                 return True
             return False
-        else:
+    else:
+        @cached_property
+        def is_barefunction(self):
+            # im_class does not exist at this point
             if self.is_descriptor:
                 return False
-            # im_class does not exist at this point
+            if six.PY2:
+                if self.is_unboundmethod:
+                    return False
             return not (self.is_membermethod or self.is_classmethod)
 
     @cached_property
-    def is_membermethod(self):
+    def is_member(self):
         """Test given argument is a method or not.
 
         :rtype: bool
@@ -163,9 +189,23 @@ class Callable(object):
                 return False
             if not self.is_descriptor:
                 return True
-
         return self.first_parameter is not None \
             and self.first_parameter.name == 'self'
+
+    @cached_property
+    def is_membermethod(self):
+        """Test given argument is a method or not.
+
+        :rtype: bool
+
+        :note: The test is partially based on the first parameter name.
+            The test result might be wrong.
+        """
+        if self.is_boundmethod:
+            return False
+        if self.is_property:
+            return False
+        return self.is_member
 
     @cached_property
     def is_classmethod(self):
