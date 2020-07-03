@@ -78,7 +78,7 @@ class FunctionRopeMixin(object):
 
     def __init__(self, *args, **kwargs):
         super(FunctionRopeMixin, self).__init__(*args, **kwargs)
-        assert self.callable.is_barefunction
+        assert self.callable.is_barefunction or self.callable.is_boundmethod
         self._wire = self.wire_class(self, None, None)
 
     def __getattr__(self, name):
@@ -104,7 +104,8 @@ class WireRope(object):
 
     Any callable can be wrapped by this class regardless of its concept -
     free function, method, property or even more weird one.
-    The calling type is decided by each call and redirected to proper RopeMixin.
+    The calling type is decided by each call and redirected to proper
+    RopeMixin.
 
     The rope will detect method or property owner by needs. It also will return
     or call their associated `wirerope.wire.Wire` object - which are the user
@@ -136,7 +137,7 @@ class WireRope(object):
                  function, method or property.
         """
         cw = Callable(function)
-        if cw.is_barefunction:
+        if cw.is_barefunction or cw.is_boundmethod:
             rope_class = self.callable_function_rope
             wire_class_call = self.wire_class.__call__
             if six.PY3:

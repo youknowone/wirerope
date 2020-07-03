@@ -71,6 +71,9 @@ def test_default_wire():
         return v
 
     class X(object):
+        def baremethod(self, v):
+            '''baremethod'''
+            return (self, v)
 
         @rope
         def method(self, v):
@@ -116,6 +119,8 @@ def test_default_wire():
 
     x = X()
 
+    boundmethod = rope(x.baremethod)
+
     assert x.method._owner == x
     assert x.cmethod._owner == X
     assert x.smethod._owner == X
@@ -132,6 +137,7 @@ def test_default_wire():
     assert X.hmethod._bound_objects == (X,)
 
     assert not callable(function)
+    assert not callable(boundmethod)
     assert not callable(x.method)
     assert not callable(x.cmethod)
     assert not callable(x.smethod)
@@ -140,6 +146,7 @@ def test_default_wire():
     assert not callable(x.hproperty)
 
     assert function.__func__(1) == 1
+    assert boundmethod.__func__(1) == (x, 1)
     assert x.method.__func__(2) == (x, 2)
     assert X.method.__func__(x, 7) == (x, 7)
     assert x.cmethod.__func__(3) == (X, 3)
@@ -153,6 +160,7 @@ def test_default_wire():
     assert X.hproperty == (X, )
 
     assert function.__doc__ == 'function'
+    assert boundmethod.__doc__ == 'baremethod'
     assert x.method.__doc__ == 'method'
     assert X.method.__doc__ == 'method'
     assert x.cmethod.__doc__ == 'cmethod'
