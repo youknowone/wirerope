@@ -1,8 +1,7 @@
 wirerope
 ========
 
-.. image:: https://travis-ci.com/youknowone/wirerope.svg?branch=master
-    :target: https://travis-ci.com/youknowone/wirerope
+.. image:: https://github.com/youknowone/wirerope/actions/workflows/python-package.yml/badge.svg
 .. image:: https://codecov.io/gh/youknowone/wirerope/graph/badge.svg
     :target: https://codecov.io/gh/youknowone/wirerope
 
