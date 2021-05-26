@@ -128,7 +128,7 @@ class Callable(object):
 
     @cached_property
     def is_boundmethod(self):
-        if self.is_function_type:
+        if self.is_function_type or self.is_builtin_property:
             return False
         try:
             return self.wrapped_object.__get__(object()) is self.wrapped_object
@@ -152,9 +152,14 @@ class Callable(object):
         return is_descriptor
 
     @cached_property
+    def is_builtin_property(self):
+        return issubclass(type(self.wrapped_object), property)
+
+    @cached_property
     def is_property(self):
-        return self.is_descriptor \
-            and self.descriptor.detect_property(_reagent, _Reagent)
+        return self.is_builtin_property or \
+            (self.is_descriptor and self.descriptor.detect_property(
+                _reagent, _Reagent))
 
     if six.PY34:
         @cached_property
