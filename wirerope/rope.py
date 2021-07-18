@@ -78,8 +78,8 @@ class PropertyRopeMixin(object):
             owner = obj if obj is not None else type
         if hasattr(self, 'wire_name'):
             wire_name = self.wire_name
-            # Lookup in `__dict__` instead of using `getattr`, because `getattr`
-            # falls back to class attributes.
+            # Lookup in `__dict__` instead of using `getattr`, because
+            # `getattr` falls back to class attributes.
             wire = owner.__dict__.get(wire_name)
         else:
             wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
