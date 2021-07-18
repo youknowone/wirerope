@@ -32,17 +32,27 @@ class MethodRopeMixin(object):
         super(MethodRopeMixin, self).__init__(*args, **kwargs)
         assert not self.callable.is_barefunction
 
+    def __set_name__(self, owner, name):
+        # Use a non-identifier character as separator to prevent name clash.
+        self.wire_name = '|'.join(['__wire', owner.__name__, name])
+
     def __get__(self, obj, type=None):
         cw = self.callable
         co = cw.wrapped_object
         owner, _ = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
-        wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
-        if owner is type:
-            wire_name_parts.extend(('_', type.__name__))
-        wire_name = ''.join(wire_name_parts)
-        wire = getattr(owner, wire_name, None)
+        if hasattr(self, 'wire_name'):
+            wire_name = self.wire_name
+            # Lookup in `__dict__` instead of using `getattr`, because
+            # `getattr` falls back to class attributes.
+            wire = owner.__dict__.get(wire_name)
+        else:
+            wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
+            if owner is type:
+                wire_name_parts.extend(('_', type.__name__))
+            wire_name = ''.join(wire_name_parts)
+            wire = getattr(owner, wire_name, None)
         if wire is None:
             wire = self.wire_class(self, owner, (obj, type))
             setattr(owner, wire_name, wire)
@@ -56,21 +66,30 @@ class PropertyRopeMixin(object):
         super(PropertyRopeMixin, self).__init__(*args, **kwargs)
         assert not self.callable.is_barefunction
 
+    def __set_name__(self, owner, name):
+        # Use a non-identifier character as separator to prevent name clash.
+        self.wire_name = '|'.join(['__wire', owner.__name__, name])
+
     def __get__(self, obj, type=None):
         cw = self.callable
         co = cw.wrapped_object
         owner, _ = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
-        wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
-        if owner is type:
-            wire_name_parts.extend(('_', type.__name__))
-        wire_name = ''.join(wire_name_parts)
-        wire = getattr(owner, wire_name, None)
+        if hasattr(self, 'wire_name'):
+            wire_name = self.wire_name
+            # Lookup in `__dict__` instead of using `getattr`, because `getattr`
+            # falls back to class attributes.
+            wire = owner.__dict__.get(wire_name)
+        else:
+            wire_name_parts = ['__wire_', cw.wrapped_callable.__name__]
+            if owner is type:
+                wire_name_parts.extend(('_', type.__name__))
+            wire_name = ''.join(wire_name_parts)
+            wire = getattr(owner, wire_name, None)
         if wire is None:
             wire = self.wire_class(self, owner, (obj, type))
             setattr(owner, wire_name, wire)
-
         return wire._on_property()  # requires property path
 
 
