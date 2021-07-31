@@ -1,3 +1,5 @@
+import sys
+
 from wirerope import Wire, WireRope, RopeCore
 
 import pytest
@@ -170,6 +172,95 @@ def test_default_wire():
     assert x.hmethod.__doc__ == 'hmethod'
     assert X.hmethod.__doc__ == 'hmethod'
     assert X.property.__doc__ == 'property'
+
+
+def test_wire_super():
+    if sys.version_info < (3, 6, 0):
+        pytest.skip(
+            "super() support requires __set_name__, which is not available"
+            " before Python 3.6"
+        )
+
+    class CallableWire(Wire):
+        def __call__(self, *args, **kwargs):
+            return self.__func__(*args, **kwargs)
+
+    rope = WireRope(CallableWire, wraps=True)
+
+    class X(object):
+        def baremethod(self, v):
+            return "baremethod" + v
+
+        @rope
+        def method(self, v):
+            return "method" + v
+
+        @rope
+        @classmethod
+        def cmethod(cls, v):
+            return "cmethod" + v
+
+        @rope
+        @staticmethod
+        def smethod(v):
+            return "smethod" + v
+
+        @rope
+        @hybridmethod
+        def hmethod(self_or_cls, v):
+            return "hmethod" + v
+
+        @rope
+        @property
+        def property(self):
+            return "property"
+
+        @rope
+        @hybridproperty
+        def hproperty(self_or_cls):
+            return "hproperty"
+
+    class Y(X):
+        def baremethod(self, v):
+            return super(Y, self).baremethod(v) + "Y"
+
+        @rope
+        def method(self, v):
+            return super(Y, self).method(v) + "Y"
+
+        @rope
+        @classmethod
+        def cmethod(cls, v):
+            return super(Y, cls).cmethod(v) + "Y"
+
+        @rope
+        @staticmethod
+        def smethod(v):
+            return X.smethod(v) + "Y"
+
+        @rope
+        @hybridmethod
+        def hmethod(self_or_cls, v):
+            return super(Y, self_or_cls).hmethod(v) + "Y"
+
+        @rope
+        @property
+        def property(self):
+            return super(Y, self).property + "Y"
+
+        @rope
+        @hybridproperty
+        def hproperty(self_or_cls):
+            return super(Y, self_or_cls).hproperty + "Y"
+
+    for obj, suffix in [(X(), ""), (Y(), "Y")]:
+        assert obj.baremethod(" ") == "baremethod " + suffix
+        assert obj.method(" ") == "method " + suffix
+        assert obj.cmethod(" ") == "cmethod " + suffix
+        assert obj.smethod(" ") == "smethod " + suffix
+        assert obj.hmethod(" ") == "hmethod " + suffix
+        assert obj.property == "property" + suffix
+        assert obj.hproperty == "hproperty" + suffix
 
 
 def test_callable_wire():
