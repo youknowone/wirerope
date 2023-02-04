@@ -130,8 +130,12 @@ class Callable(object):
     def is_boundmethod(self):
         if self.is_function_type or self.is_builtin_property:
             return False
+        new_bound = self.wrapped_object.__get__(object())
         try:
-            return self.wrapped_object.__get__(object()) is self.wrapped_object
+            if six.PY2:
+                return new_bound is self.wrapped_object
+            else:
+                return type(new_bound) is type(self.wrapped_object)  # noqa
         except Exception:
             return False
 
