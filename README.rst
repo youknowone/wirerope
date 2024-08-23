@@ -8,14 +8,14 @@ wirerope
 
 The concepts:
 
-- :class:`wirerope.rope.WireRope` is a wrapper interface for python callable.
-- Custom :class:`wirerope.wire.Wire` class provides user-defined behavior.
+- `wirerope.rope.WireRope` is a wrapper interface for python callable.
+- Custom `wirerope.wire.Wire` class provides user-defined behavior.
   A subclass of this class is working similar to a *decorator function* body.
 - A wire object is associated with a bound method.
 - Rope is dispatching types.
 
-:class:`wirerope.rope.WireRope` is the wrapper for callables. By wrapping a
-function with `WireRope` with a custom subclass of the :class:`wirerope.wire.Wire`
+`wirerope.rope.WireRope` is the wrapper for callables. By wrapping a
+function with `WireRope` with a custom subclass of the `wirerope.wire.Wire`
 class, the wire object will be created by each function or bound method.
 
 `Wire` is the most important part. The given class will be instantiated and
