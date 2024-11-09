@@ -48,7 +48,10 @@ class Descriptor(object):
         indicator = object()
         descriptor = self.descriptor_class(indicator)
         for name in dir(descriptor):
-            attr = getattr(descriptor, name)
+            try:
+                attr = getattr(descriptor, name)
+            except AttributeError:
+                continue
             if attr is indicator:
                 # detected!
                 return name
