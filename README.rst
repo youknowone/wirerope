@@ -39,3 +39,9 @@ See also
 - See `tests/test_wire.py` for simple example.
 - See [methodtools](https://github.com/youknowone/methodtools) for practical
   example.
+
+
+Python2 support
+---------------
+
+wirerope 1.0 stops to support Python 2. If you need Python 2 support, use 0.4.7 the latest version for Python 2.
