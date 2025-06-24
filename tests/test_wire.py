@@ -1,7 +1,4 @@
 import sys
-
-from wirerope import Wire, WireRope, RopeCore
-
 import pytest
 
 
@@ -54,7 +51,9 @@ def test_hybridproperty():
     assert x.p is x
 
 
-def test_default_wire():
+def test_default_wire(Wire, WireRope, implementation):
+    """Test default wire behavior (implementation: {implementation})"""
+
     class TestWire(Wire):
         pass
 
@@ -105,7 +104,9 @@ def test_default_wire():
             """hproperty"""
             return (self_or_cls,)
 
-    assert isinstance(function, RopeCore)
+    # Check if function inherits from RopeCore
+    # Direct isinstance check can fail after module reloading
+    assert any(base.__name__ == "RopeCore" for base in function.__class__.__mro__)
     assert isinstance(X.method, Wire)  # triggered descriptor
     assert isinstance(X.cmethod, Wire)  # triggered descriptor
     assert isinstance(X.smethod, Wire)  # triggered descriptor
@@ -167,7 +168,7 @@ def test_default_wire():
     assert X.property.__doc__ == "property"
 
 
-def test_wire_super():
+def test_wire_super(Wire, WireRope):
     if sys.version_info < (3, 6, 0):
         pytest.skip(
             "super() support requires __set_name__, which is not available"
@@ -259,7 +260,7 @@ def test_wire_super():
         assert obj.hproperty == "hproperty" + suffix
 
 
-def test_callable_wire():
+def test_callable_wire(Wire, WireRope):
     class CallableWire(Wire):
         def __call__(self, *args, **kwargs):
             return self.__func__(*args, **kwargs)
@@ -306,7 +307,7 @@ def test_callable_wire():
     assert x.p == 42
 
 
-def test_wire():
+def test_wire(Wire, WireRope):
     class TestWire(Wire):
         x = 7
 
@@ -342,7 +343,7 @@ def test_wire():
     assert not callable(a.f)
 
 
-def test_unwirable():
+def test_unwirable(Wire, WireRope):
     rope = WireRope(Wire)
 
     @rope

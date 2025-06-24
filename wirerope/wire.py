@@ -10,15 +10,19 @@ from ._compat import functools
 __all__ = ("Wire",)
 
 
-@functools.singledispatch
 def descriptor_bind(descriptor, obj, type_):
+    """Bind a descriptor to an object and type.
+
+    This function determines how to bind a descriptor based on its type.
+    It replaces the previous singledispatch implementation for better performance.
+    """
+    # Direct type check for FunctionType - most common case
+    if isinstance(descriptor, types.FunctionType):
+        return obj, obj
+
+    # Fall back to the generic descriptor handling for all other types
     binder = Descriptor(descriptor).detect_binder(obj, type_)
     return binder(descriptor, obj, type_)
-
-
-@descriptor_bind.register(types.FunctionType)
-def descriptor_bind_function(descriptor, obj, type):
-    return obj, obj
 
 
 class Wire(object):

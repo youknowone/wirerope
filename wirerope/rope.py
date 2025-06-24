@@ -7,7 +7,43 @@ from .callable import Callable
 from .wire import descriptor_bind
 from ._compat import functools
 
-__all__ = "WireRope", "RopeCore"
+__all__ = (
+    "WireRope",
+    "RopeCore",
+)
+
+
+def _copy_wrapped_attributes(wrapped_obj, target, attributes=None):
+    """Helper function to copy attributes from wrapped object to target.
+
+    Args:
+        wrapped_obj: The wrapped object to copy attributes from
+        target: The target object to copy attributes to
+        attributes: List of attribute names to copy (default: standard function attributes)
+    """
+    if attributes is None:
+        attributes = [
+            "__doc__",
+            "__name__",
+            "__module__",
+            "__qualname__",
+            "__annotations__",
+        ]
+
+    # For hybridmethod/hybridproperty, we need to get attributes from __func__
+    if hasattr(wrapped_obj, "__func__"):
+        source_obj = wrapped_obj.__func__
+    else:
+        source_obj = wrapped_obj
+
+    # Copy attributes from source object to target
+    for attr in attributes:
+        try:
+            value = getattr(source_obj, attr, None)
+            if value is not None:
+                setattr(target, attr, value)
+        except (AttributeError, TypeError):
+            pass
 
 
 class RopeCore(object):
@@ -55,6 +91,9 @@ class MethodRopeMixin(object):
             wire = getattr(owner, wire_name, None)
         if wire is None:
             wire = self.wire_class(self, owner, (obj, type))
+            # Apply functools.wraps behavior if _wrapped is True
+            if self._wrapped:
+                _copy_wrapped_attributes(self.callable.wrapped_object, wire)
             setattr(owner, wire_name, wire)
         assert callable(wire.__func__)
         return wire
@@ -112,6 +151,9 @@ class PropertyRopeMixin(object):
             wire = getattr(owner, wire_name, None)
         if wire is None:
             wire = self.wire_class(self, owner, (obj, type))
+            # Apply functools.wraps behavior if _wrapped is True
+            if self._wrapped:
+                _copy_wrapped_attributes(self.callable.wrapped_object, wire)
             setattr(owner, wire_name, wire)
         return wire._on_property()  # requires property path
 
@@ -121,6 +163,9 @@ class FunctionRopeMixin(object):
         super(FunctionRopeMixin, self).__init__(*args, **kwargs)
         assert self.callable.is_barefunction or self.callable.is_boundmethod
         self._wire = self.wire_class(self, None, None)
+        # Apply functools.wraps behavior if _wrapped is True
+        if self._wrapped:
+            _copy_wrapped_attributes(self.callable.wrapped_object, self._wire)
 
     def __getattr__(self, name):
         try:
