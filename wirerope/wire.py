@@ -1,12 +1,13 @@
 """:mod:`wirerope.wire` --- end-point instant for each bound method
 ===================================================================
 """
+
 import six
 import types
 from .callable import Descriptor
 from ._compat import functools
 
-__all__ = 'Wire',
+__all__ = ("Wire",)
 
 
 @functools.singledispatch
@@ -32,8 +33,13 @@ class Wire(object):
     """
 
     __slots__ = (
-        '_rope', '_callable', '_binding', '__func__', '_owner',
-        '_bound_objects')
+        "_rope",
+        "_callable",
+        "_binding",
+        "__func__",
+        "_owner",
+        "_bound_objects",
+    )
 
     def __init__(self, rope, owner, binding):
         self._rope = rope
@@ -57,10 +63,9 @@ class Wire(object):
         if self._binding is None:
             self._bound_objects = ()
         else:
-            _, binder = descriptor_bind(
-                self._callable.wrapped_object, *self._binding)
+            _, binder = descriptor_bind(self._callable.wrapped_object, *self._binding)
             if binder is not None:
-                self._bound_objects = (binder, )
+                self._bound_objects = (binder,)
             else:
                 self._bound_objects = ()
         assert callable(self.__func__), self.__func__

@@ -3,8 +3,10 @@ from __future__ import absolute_import
 import six
 
 import functools
-if not hasattr(functools, 'singledispatch'):
+
+if not hasattr(functools, "singledispatch"):
     import singledispatch
+
     functools.singledispatch = singledispatch.singledispatch
 
 if six.PY3:

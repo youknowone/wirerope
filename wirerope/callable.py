@@ -5,11 +5,10 @@ import six
 from ._util import cached_property
 from ._compat import inspect
 
-__all__ = ('Callable', )
+__all__ = ("Callable",)
 
 
-_inspect_iscoroutinefunction = getattr(
-    inspect, 'iscoroutinefunction', lambda f: False)
+_inspect_iscoroutinefunction = getattr(inspect, "iscoroutinefunction", lambda f: False)
 
 
 class _Reagent(object):
@@ -39,7 +38,6 @@ _descriptor_binder_cache = {}
 
 
 class Descriptor(object):
-
     def __init__(self, descriptor):
         self.descriptor = descriptor
         self.descriptor_class = type(descriptor)
@@ -58,7 +56,8 @@ class Descriptor(object):
         else:
             raise RuntimeError(
                 "The given function doesn't hold the given function as an "
-                "attribute. Is it a correct descriptor?")
+                "attribute. Is it a correct descriptor?"
+            )
 
     def detect_property(self, obj, type_):
         d = self.descriptor_class(_f)
@@ -94,7 +93,8 @@ class Descriptor(object):
                 raise TypeError(
                     "'descriptor_bind' fails to auto-detect binding rule "
                     "of the given descriptor. Specify the rule by "
-                    "'wirerope.wire.descriptor_bind.register'.")
+                    "'wirerope.wire.descriptor_bind.register'."
+                )
             _descriptor_binder_cache[key] = binder
         else:
             binder = _descriptor_binder_cache[key]
@@ -113,9 +113,8 @@ class Callable(object):
         else:
             self.descriptor = None
         self.wrapped_callable = f
-        self.is_wrapped_coroutine = getattr(f, '_is_coroutine', None)
-        self.is_coroutine = self.is_wrapped_coroutine or \
-            _inspect_iscoroutinefunction(f)
+        self.is_wrapped_coroutine = getattr(f, "_is_coroutine", None)
+        self.is_coroutine = self.is_wrapped_coroutine or _inspect_iscoroutinefunction(f)
 
     @cached_property
     def signature(self):
@@ -143,6 +142,7 @@ class Callable(object):
             return False
 
     if six.PY2:
+
         @property
         def is_unboundmethod(self):
             return type(self.wrapped_object) is type(Callable.__init__)  # noqa
@@ -151,11 +151,13 @@ class Callable(object):
     def is_descriptor(self):
         if self.is_boundmethod:
             return False
-        is_descriptor = type(self.wrapped_object).__get__ \
-            is not types.FunctionType.__get__  # noqa
+        is_descriptor = (
+            type(self.wrapped_object).__get__ is not types.FunctionType.__get__
+        )  # noqa
         if six.PY2:
-            is_descriptor = is_descriptor and \
-                not (self.is_unboundmethod or self.is_boundmethod)
+            is_descriptor = is_descriptor and not (
+                self.is_unboundmethod or self.is_boundmethod
+            )
         return is_descriptor
 
     @cached_property
@@ -164,19 +166,21 @@ class Callable(object):
 
     @cached_property
     def is_property(self):
-        return self.is_builtin_property or \
-            (self.is_descriptor and self.descriptor.detect_property(
-                _reagent, _Reagent))
+        return self.is_builtin_property or (
+            self.is_descriptor and self.descriptor.detect_property(_reagent, _Reagent)
+        )
 
     if six.PY34:
+
         @cached_property
         def is_barefunction(self):
             cc = self.wrapped_callable
-            method_name = cc.__qualname__.split('<locals>.')[-1]
+            method_name = cc.__qualname__.split("<locals>.")[-1]
             if method_name == cc.__name__:
                 return True
             return False
     else:
+
         @cached_property
         def is_barefunction(self):
             # im_class does not exist at this point
@@ -201,8 +205,7 @@ class Callable(object):
                 return False
             if not self.is_descriptor:
                 return True
-        return self.first_parameter is not None \
-            and self.first_parameter.name == 'self'
+        return self.first_parameter is not None and self.first_parameter.name == "self"
 
     @cached_property
     def is_membermethod(self):
@@ -236,5 +239,4 @@ class Callable(object):
             if not self.is_descriptor:
                 return False
 
-        return self.first_parameter is not None \
-            and self.first_parameter.name == 'cls'
+        return self.first_parameter is not None and self.first_parameter.name == "cls"
