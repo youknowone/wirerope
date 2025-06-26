@@ -229,18 +229,41 @@ class TestUnifiedBenchmark:
             obj = self.rust_callable
             cls = self.RustCallable
 
-        # Select method type
+        # Pre-warm cache by accessing each method once
         if method_type == "method":
-            func = obj.method
-        elif method_type == "classmethod":
-            func = cls.classmethod
-        elif method_type == "staticmethod":
-            func = cls.staticmethod
-        else:  # property
+            _ = obj.method()  # Warm up cache
             def func():
-                return obj.prop
+                # Use the same object repeatedly (cache hits)
+                total = 0
+                for _ in range(100):
+                    total += obj.method()
+                return total
+        elif method_type == "classmethod":
+            _ = cls.classmethod()  # Warm up cache
+            def func():
+                # Use the same class repeatedly (cache hits)
+                result = None
+                for _ in range(100):
+                    result = cls.classmethod()
+                return result
+        elif method_type == "staticmethod":
+            _ = cls.staticmethod()  # Warm up cache
+            def func():
+                # Use the same class repeatedly (cache hits)
+                result = None
+                for _ in range(100):
+                    result = cls.staticmethod()
+                return result
+        else:  # property
+            _ = obj.prop  # Warm up cache
+            def func():
+                # Use the same object repeatedly (cache hits)
+                result = None
+                for _ in range(100):
+                    result = obj.prop
+                return result
 
-        # Run benchmark
+        # Run benchmark - now mostly cache hits
         benchmark.group = f"{method_type}-three-way"
         benchmark.name = f"{method_type}_{impl}"
         result = benchmark(func)
@@ -253,7 +276,7 @@ class TestUnifiedBenchmark:
         elif method_type == "staticmethod":
             assert result == "static"
         else:
-            assert result == 42
+            assert result == 4200  # 100 calls * 42
 
 
     # Group 4: First call vs cached call

@@ -293,22 +293,22 @@ impl Wire {
 
     fn _on_property(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-        // Optimized property access - use cached property getter when possible
-        if let Some(ref binding) = self.binding {
-            // Check if we have a cached property getter for direct access
-            if let Some(ref property_fget) = self.property_fget {
-                // Direct call to the cached getter with self
-                return property_fget.call1(py, (&binding.0,));
-            }
+            // Optimized property access - use cached property getter when possible
+            if let Some(ref binding) = self.binding {
+                // Check if we have a cached property getter for direct access
+                if let Some(ref property_fget) = self.property_fget {
+                    // Direct call to the cached getter with self
+                    return property_fget.call1(py, (&binding.0,));
+                }
 
-            // Fallback: call __get__ on the wrapped_object (the property descriptor)
-            // This is needed for built-in properties that don't have fget
-            self.wrapped_object
-                .call_method1(py, "__get__", (&binding.0, &binding.1))
-        } else {
-            // No binding, call the function directly
-            self.__func__.call0(py)
-        }
+                // Fallback: call __get__ on the wrapped_object (the property descriptor)
+                // This is needed for built-in properties that don't have fget
+                self.wrapped_object
+                    .call_method1(py, "__get__", (&binding.0, &binding.1))
+            } else {
+                // No binding, call the function directly
+                self.__func__.call0(py)
+            }
         })
     }
 }
