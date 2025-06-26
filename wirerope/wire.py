@@ -49,7 +49,19 @@ class Wire(object):
         if binding:
             func = self._callable.wrapped_object.__get__
             if self._callable.is_property:
-                wrapped = functools.partial(func, *binding)
+                wrapped_obj = self._callable.wrapped_object
+                # Optimization: try to cache property getter for direct calls
+                if hasattr(wrapped_obj, "fget") and wrapped_obj.fget:
+                    # Store the property getter and bound instance for fast access
+                    self._property_fget = wrapped_obj.fget
+                    self._property_instance = binding[0]
+                    # Still create partial for compatibility
+                    wrapped = functools.partial(func, *binding)
+                else:
+                    # Fallback for non-standard properties
+                    wrapped = functools.partial(func, *binding)
+                    self._property_fget = None
+
                 if six.PY2:
                     # functools.wraps requires those attributes but
                     # py2 functools.partial doesn't have them
@@ -73,4 +85,8 @@ class Wire(object):
             functools.wraps(self.__func__)(self)
 
     def _on_property(self):
+        # Optimized property access: use cached getter when available
+        if hasattr(self, "_property_fget") and self._property_fget is not None:
+            return self._property_fget(self._property_instance)
+        # Fallback to original approach
         return self.__func__()

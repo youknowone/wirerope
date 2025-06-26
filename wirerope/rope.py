@@ -72,6 +72,30 @@ class PropertyRopeMixin(object):
     def __get__(self, obj, type=None):
         cw = self.callable
         co = cw.wrapped_object
+
+        # Special handling for class access (obj is None)
+        if obj is None:
+            # Distinguish between regular property and hybridproperty by behavior:
+            # - regular property: returns itself when accessed from class
+            # - hybridproperty: executes and returns result when accessed from class
+
+            # Test the descriptor's behavior by calling __get__ with None
+            if hasattr(co, "__get__"):
+                try:
+                    result = co.__get__(None, type)
+                    # If result is the same object, it's a regular property
+                    if result is co:
+                        return co
+                    else:
+                        # If result is different, it's a hybridproperty-like descriptor
+                        return result
+                except (TypeError, AttributeError):
+                    # If __get__ fails with None, it's probably a regular property
+                    return co
+
+            # Fallback: return the descriptor itself
+            return co
+
         owner, _ = descriptor_bind(co, obj, type)
         if owner is None:  # invalid binding but still wire it
             owner = obj if obj is not None else type
