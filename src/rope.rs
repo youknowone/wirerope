@@ -175,8 +175,8 @@ pub struct MethodRope {
     cached_wrapped_object: OnceLock<PyObject>,
     cached_wrapped_callable_name: OnceLock<String>,
     cached_wire_class: OnceLock<PyObject>,
-    // Wire cache: (object_id, type_id) -> wire
-    wire_cache: Mutex<HashMap<(usize, usize), PyObject>>,
+    // Wire cache: cache_key -> wire (optimized single key)
+    wire_cache: Mutex<HashMap<usize, PyObject>>,
 }
 
 #[pymethods]
@@ -253,10 +253,13 @@ impl MethodRope {
         let base: &RopeCore = slf.as_ref();
 
         // Fast path: Check Rust-side cache first
-        // Optimize key generation - avoid tuple allocation for common case
+        // Optimized key: use obj_ptr when available, otherwise type_ptr
         let obj_ptr = obj.as_ptr() as usize;
-        let type_ptr = type_.map_or(0, |t| t.as_ptr() as usize);
-        let wire_key = (obj_ptr, type_ptr);
+        let wire_key = if obj_ptr > 0 {
+            obj_ptr  // Instance method: use object pointer
+        } else {
+            type_.map_or(0, |t| t.as_ptr() as usize)  // Class/static method: use type pointer
+        };
 
         // Try to get from cache
         let cache = slf.wire_cache.lock();
@@ -375,8 +378,8 @@ pub struct PropertyRope {
     cached_wrapped_object: OnceLock<PyObject>,
     cached_wire_class: OnceLock<PyObject>,
     cached_property_fget: OnceLock<Option<PyObject>>,
-    // Wire cache: (object_id, type_id) -> wire
-    wire_cache: Mutex<HashMap<(usize, usize), PyObject>>,
+    // Wire cache: cache_key -> wire (optimized single key)
+    wire_cache: Mutex<HashMap<usize, PyObject>>,
 }
 
 #[pymethods]
@@ -468,8 +471,11 @@ impl PropertyRope {
 
         // Fallback to full Wire creation for complex properties
         let obj_ptr = obj.as_ptr() as usize;
-        let type_ptr = type_.map_or(0, |t| t.as_ptr() as usize);
-        let wire_key = (obj_ptr, type_ptr);
+        let wire_key = if obj_ptr > 0 {
+            obj_ptr  // Instance property: use object pointer
+        } else {
+            type_.map_or(0, |t| t.as_ptr() as usize)  // Class property: use type pointer
+        };
 
         // Try to get from cache
         let cache = slf.wire_cache.lock();
