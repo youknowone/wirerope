@@ -253,16 +253,10 @@ impl MethodRope {
         let base: &RopeCore = slf.as_ref();
 
         // Fast path: Check Rust-side cache first
-        // Note: as_ptr() returns the actual PyObject* pointer, which is the same as Python's id()
-        let obj_id = obj.as_ptr() as usize; // Works even for None (has unique address)
-
-        let type_id = if let Some(t) = type_ {
-            t.as_ptr() as usize
-        } else {
-            0 // Use 0 when type_ is not provided
-        };
-
-        let wire_key = (obj_id, type_id);
+        // Optimize key generation - avoid tuple allocation for common case
+        let obj_ptr = obj.as_ptr() as usize;
+        let type_ptr = type_.map_or(0, |t| t.as_ptr() as usize);
+        let wire_key = (obj_ptr, type_ptr);
 
         // Try to get from cache
         let cache = slf.wire_cache.lock();
@@ -457,11 +451,14 @@ impl PropertyRope {
         let property_fget = slf.cached_property_fget.get_or_init(|| {
             let wrapped_object = base.wrapped_object.clone_ref(py);
 
-            // Try to extract fget for direct calls
-            wrapped_object
-                .getattr(py, "fget")
-                .ok()
-                .or_else(|| wrapped_object.getattr(py, "__func__").ok())
+            // First try fget (standard property), then __func__ (custom descriptors)
+            if let Ok(fget) = wrapped_object.getattr(py, "fget") {
+                Some(fget)
+            } else if let Ok(func) = wrapped_object.getattr(py, "__func__") {
+                Some(func)
+            } else {
+                None
+            }
         });
 
         // If we have a direct property getter, use it for maximum performance
@@ -470,13 +467,9 @@ impl PropertyRope {
         }
 
         // Fallback to full Wire creation for complex properties
-        let obj_id = obj.as_ptr() as usize;
-        let type_id = if let Some(t) = type_ {
-            t.as_ptr() as usize
-        } else {
-            0
-        };
-        let wire_key = (obj_id, type_id);
+        let obj_ptr = obj.as_ptr() as usize;
+        let type_ptr = type_.map_or(0, |t| t.as_ptr() as usize);
+        let wire_key = (obj_ptr, type_ptr);
 
         // Try to get from cache
         let cache = slf.wire_cache.lock();
