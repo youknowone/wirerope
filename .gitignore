@@ -17,3 +17,10 @@ MANIFEST
 /build
 .coverage
 .pytest_cache
+
+# Rust
+target/
+Cargo.lock
+*.rs.bk
+*.so
+*.pyd

@@ -1,0 +1,20 @@
+[package]
+name = "wirerope-rust"
+version = "1.0.0"
+edition = "2021"
+authors = ["Jeong, YunWon <wirerope@youknowone.org>"]
+license = "BSD-2-Clause"
+description = "High-performance Rust implementation of wirerope"
+
+[lib]
+name = "_wirerope_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.25", features = ["extension-module", "abi3-py39"] }
+parking_lot = "0.12"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3

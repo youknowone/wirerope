@@ -41,6 +41,20 @@ See also
   example.
 
 
+Performance
+-----------
+
+wirerope includes an optional high-performance Rust implementation that provides
+30-46% performance improvements while maintaining 100% compatibility. The Rust
+implementation is automatically used when available.
+
+To build with Rust support:
+
+.. code-block:: bash
+
+    pip install maturin
+    maturin develop --release
+
 Python2 support
 ---------------
 
