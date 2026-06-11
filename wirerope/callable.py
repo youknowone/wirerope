@@ -1,9 +1,8 @@
 from __future__ import absolute_import
 
+import inspect
 import types
-import six
 from ._util import cached_property
-from ._compat import inspect
 
 __all__ = ('Callable', )
 
@@ -135,17 +134,9 @@ class Callable(object):
             return False
         new_bound = self.wrapped_object.__get__(object())
         try:
-            if six.PY2:
-                return new_bound is self.wrapped_object
-            else:
-                return type(new_bound) is type(self.wrapped_object)  # noqa
+            return type(new_bound) is type(self.wrapped_object)  # noqa
         except Exception:
             return False
-
-    if six.PY2:
-        @property
-        def is_unboundmethod(self):
-            return type(self.wrapped_object) is type(Callable.__init__)  # noqa
 
     @cached_property
     def is_descriptor(self):
@@ -153,9 +144,6 @@ class Callable(object):
             return False
         is_descriptor = type(self.wrapped_object).__get__ \
             is not types.FunctionType.__get__  # noqa
-        if six.PY2:
-            is_descriptor = is_descriptor and \
-                not (self.is_unboundmethod or self.is_boundmethod)
         return is_descriptor
 
     @cached_property
@@ -168,24 +156,11 @@ class Callable(object):
             (self.is_descriptor and self.descriptor.detect_property(
                 _reagent, _Reagent))
 
-    if six.PY34:
-        @cached_property
-        def is_barefunction(self):
-            cc = self.wrapped_callable
-            method_name = cc.__qualname__.split('<locals>.')[-1]
-            if method_name == cc.__name__:
-                return True
-            return False
-    else:
-        @cached_property
-        def is_barefunction(self):
-            # im_class does not exist at this point
-            if self.is_descriptor:
-                return False
-            if six.PY2:
-                if self.is_unboundmethod:
-                    return False
-            return not (self.is_membermethod or self.is_classmethod)
+    @cached_property
+    def is_barefunction(self):
+        cc = self.wrapped_callable
+        method_name = cc.__qualname__.split('<locals>.')[-1]
+        return method_name == cc.__name__
 
     @cached_property
     def is_member(self):
@@ -196,11 +171,10 @@ class Callable(object):
         :note: The test is partially based on the first parameter name.
             The test result might be wrong.
         """
-        if six.PY34:
-            if self.is_barefunction:
-                return False
-            if not self.is_descriptor:
-                return True
+        if self.is_barefunction:
+            return False
+        if not self.is_descriptor:
+            return True
         return self.first_parameter is not None \
             and self.first_parameter.name == 'self'
 
@@ -230,11 +204,10 @@ class Callable(object):
         """
         if isinstance(self.wrapped_object, classmethod):
             return True
-        if six.PY34:
-            if self.is_barefunction:
-                return False
-            if not self.is_descriptor:
-                return False
+        if self.is_barefunction:
+            return False
+        if not self.is_descriptor:
+            return False
 
         return self.first_parameter is not None \
             and self.first_parameter.name == 'cls'

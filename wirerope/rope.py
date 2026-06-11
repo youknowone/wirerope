@@ -1,10 +1,9 @@
 """:mod:`wirerope.rope` --- Wire access dispatcher for descriptor type.
 =======================================================================
 """
-import six
+import functools
 from .callable import Callable
 from .wire import descriptor_bind
-from ._compat import functools
 
 __all__ = 'WireRope', 'RopeCore'
 
@@ -159,15 +158,8 @@ class WireRope(object):
         if cw.is_barefunction or cw.is_boundmethod:
             rope_class = self.callable_function_rope
             wire_class_call = self.wire_class.__call__
-            if six.PY3:
-                if wire_class_call.__qualname__ == 'type.__call__':
-                    rope_class = self.function_rope
-            else:
-                # method-wrapper test for CPython2.7
-                # im_class == type test for PyPy2.7
-                if type(wire_class_call).__name__ == 'method-wrapper' or \
-                        wire_class_call.im_class == type:
-                    rope_class = self.function_rope
+            if wire_class_call.__qualname__ == 'type.__call__':
+                rope_class = self.function_rope
         elif cw.is_property:
             rope_class = self.property_rope
         else:

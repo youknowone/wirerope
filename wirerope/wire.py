@@ -1,10 +1,9 @@
 """:mod:`wirerope.wire` --- end-point instant for each bound method
 ===================================================================
 """
-import six
+import functools
 import types
 from .callable import Descriptor
-from ._compat import functools
 
 __all__ = 'Wire',
 
@@ -44,11 +43,6 @@ class Wire(object):
             func = self._callable.wrapped_object.__get__
             if self._callable.is_property:
                 wrapped = functools.partial(func, *binding)
-                if six.PY2:
-                    # functools.wraps requires those attributes but
-                    # py2 functools.partial doesn't have them
-                    wrapped.__module__ = owner.__module__
-                    wrapped.__name__ = func.__name__
                 self.__func__ = wrapped
             else:
                 self.__func__ = func(*binding)
